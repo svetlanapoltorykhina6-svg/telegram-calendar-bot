@@ -1,1 +1,1 @@
-# friendly-fiesta
+# telegram-calendar-bot
