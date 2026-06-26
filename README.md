@@ -109,3 +109,20 @@ https://<tunnel-domain>/telegram/webhook/<TELEGRAM_WEBHOOK_SECRET>
 ```
 
 Регистрация webhook будет добавлена на следующих этапах вместе с полноценной Telegram-интеграцией.
+
+## Deploy на сервер
+
+Production-подготовка добавлена в папку `deploy/`.
+
+Основные файлы:
+
+- `docker-compose.prod.yml` - запуск backend, PostgreSQL, Redis и Caddy;
+- `.env.production.example` - шаблон production-настроек без секретов;
+- `deploy/Caddyfile` - HTTPS reverse proxy;
+- `deploy/register_webhook.sh` - регистрация Telegram webhook;
+- `deploy/README.md` - пошаговая инструкция запуска на сервере.
+
+Сервер: `132.243.23.203`.
+Production-домен: `calendar.treeboxfree.ru`.
+
+Для полноценного Telegram webhook нужен домен с HTTPS, направленный на сервер. Без домена можно проверить приложение по IP, но Telegram production webhook должен быть доступен по HTTPS URL.
