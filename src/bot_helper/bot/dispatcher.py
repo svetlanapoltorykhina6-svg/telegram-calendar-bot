@@ -407,6 +407,24 @@ def create_dispatcher(settings: Settings) -> Dispatcher:
                 reply_markup=admin_request_keyboard(request_id),
             )
             return
+        except Exception as exc:  # pragma: no cover
+            flow_context.update_request(request_id, status="pending")
+            logger.exception(
+                "request approval failed",
+                extra={
+                    "event": "request_approval_failed",
+                    "component": "telegram",
+                    "request_id": request_id,
+                    "error_code": exc.__class__.__name__,
+                },
+            )
+            await callback.answer("Не удалось согласовать заявку.", show_alert=True)
+            await callback.message.answer(
+                "Не удалось согласовать заявку из-за внутренней ошибки.\n\n"
+                "Заявка оставлена в ожидании, можно повторить согласование после исправления.",
+                reply_markup=admin_request_keyboard(request_id),
+            )
+            return
 
         flow_context.update_request(
             request_id,

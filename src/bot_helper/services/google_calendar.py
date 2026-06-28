@@ -209,8 +209,23 @@ class GoogleCalendarClient:
 
         if credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
-            token_file.parent.mkdir(parents=True, exist_ok=True)
-            token_file.write_text(credentials.to_json(), encoding="utf-8")
+            try:
+                token_file.parent.mkdir(parents=True, exist_ok=True)
+                token_file.write_text(credentials.to_json(), encoding="utf-8")
+            except OSError as exc:
+                logger.exception(
+                    "google oauth token refresh save failed",
+                    extra={
+                        "event": "google_oauth_token_refresh_save_failed",
+                        "component": "google_calendar",
+                        "error_code": exc.__class__.__name__,
+                    },
+                )
+                raise GoogleCalendarConfigurationError(
+                    "OAuth-токен Google обновился, но его не удалось сохранить. "
+                    "Проверьте, что GOOGLE_OAUTH_TOKEN_FILE находится в каталоге, "
+                    "доступном контейнеру на запись."
+                ) from exc
             logger.info(
                 "google oauth token refreshed",
                 extra={

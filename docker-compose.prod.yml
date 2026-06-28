@@ -6,7 +6,7 @@ services:
     expose:
       - "8000"
     volumes:
-      - ./secrets:/app/secrets:ro
+      - ./secrets:/app/secrets
     depends_on:
       postgres:
         condition: service_healthy

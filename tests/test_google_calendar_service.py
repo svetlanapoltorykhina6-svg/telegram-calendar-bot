@@ -1,6 +1,12 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
+import pytest
+
+from bot_helper.core.config import Settings
 from bot_helper.services.google_calendar import (
+    GoogleCalendarClient,
+    GoogleCalendarConfigurationError,
     GoogleCalendarEventCreate,
     build_event_body,
     extract_meet_link,
@@ -62,3 +68,43 @@ def test_extract_meet_link_prefers_hangout_link() -> None:
     )
 
     assert link == "https://meet.google.com/aaa-bbbb-ccc"
+
+
+def test_oauth_refresh_write_failure_reports_configuration_error(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    token_file = tmp_path / "google-oauth-token.json"
+    token_file.write_text("{}", encoding="utf-8")
+
+    class FakeCredentials:
+        valid = False
+        expired = True
+        refresh_token = "refresh-token"
+
+        def refresh(self, request) -> None:
+            return None
+
+        def to_json(self) -> str:
+            return "{}"
+
+    monkeypatch.setattr(
+        "bot_helper.services.google_calendar.Credentials.from_authorized_user_file",
+        lambda *args, **kwargs: FakeCredentials(),
+    )
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError("read-only")),
+    )
+
+    client = GoogleCalendarClient(
+        Settings(
+            use_google_calendar_service_account=False,
+            google_oauth_token_file=str(token_file),
+            google_oauth_client_file="client.json",
+        )
+    )
+
+    with pytest.raises(GoogleCalendarConfigurationError, match="не удалось сохранить"):
+        client._load_oauth_credentials()
