@@ -5,7 +5,6 @@ from aiogram import Bot
 from aiogram.types import Update
 from fastapi import APIRouter, HTTPException, Request, status
 
-from bot_helper.bot.dispatcher import create_dispatcher
 from bot_helper.core.config import Settings
 from bot_helper.db.session import check_database
 from bot_helper.redis.client import check_redis
@@ -130,22 +129,32 @@ async def telegram_webhook(secret: str, request: Request) -> dict[str, str]:
         )
 
     payload = await request.json()
-    bot = Bot(token=settings.telegram_bot_token)
-    dispatcher = create_dispatcher(settings)
-
-    try:
-        update = Update.model_validate(payload, context={"bot": bot})
-        logger.info(
-            "telegram update received",
+    bot: Bot | None = getattr(request.app.state, "telegram_bot", None)
+    dispatcher = getattr(request.app.state, "telegram_dispatcher", None)
+    if bot is None or dispatcher is None:
+        logger.error(
+            "telegram bot runtime is not initialized",
             extra={
-                "event": "telegram_update_received",
+                "event": "telegram_runtime_missing",
                 "component": "telegram",
                 "request_id": request_id,
-                "telegram_update_id": update.update_id,
             },
         )
-        await dispatcher.feed_update(bot, update)
-    finally:
-        await bot.session.close()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Telegram bot runtime is not initialized",
+        )
+
+    update = Update.model_validate(payload, context={"bot": bot})
+    logger.info(
+        "telegram update received",
+        extra={
+            "event": "telegram_update_received",
+            "component": "telegram",
+            "request_id": request_id,
+            "telegram_update_id": update.update_id,
+        },
+    )
+    await dispatcher.feed_update(bot, update)
 
     return {"status": "ok"}
