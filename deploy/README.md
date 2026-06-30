@@ -20,6 +20,8 @@ Production-домен: `calendar.treeboxfree.ru`.
 - `.env.production.example` - шаблон production переменных без секретов.
 - `deploy/Caddyfile` - HTTPS reverse proxy.
 - `deploy/register_webhook.sh` - регистрация Telegram webhook.
+- `deploy/remote_deploy.sh` - серверный скрипт автодеплоя из GitHub Actions.
+- `deploy/AUTO_DEPLOY.md` - инструкция по настройке автодеплоя после push в GitHub.
 
 ## Первый запуск
 
